@@ -3,22 +3,93 @@
 <head>
 	<title></title>
 	<script>
+//motel.rooms = { 123 : ["john"] }
+//
 
 function Hotel(){
-
+    this.rooms = {}; //the entire list of rooms and their guests, keys equal to roomID
+    this.totalRooms = 13;
+    this.guestRegistry = []; //the entire list of rooms and their guests as objects
+    this.roomHistory = {}; //all guests who have stayed at a particular room as an object of arrays
+    /**
+     * attempts to check a guest into a room
+     * @param roomID    the number of the room the guest wishes to check into
+     * @param name      the name of the guest
+     */
 	this.checkIn = function(roomID, name){
-		//add a guest to the hotel.  
-		//store the guest and the room that they checked into
-	}
+        //add a guest to the hotel.
+        //store the guest and the room that they checked into
+        if (this.getVacancyCount() === 0){
+            console.warn("Sorry, we're full!");
+        } else if (this.rooms[roomID] === undefined || this.rooms[roomID]['name'] === undefined){ //if noone is in the room...
+            var date = new Date();
+            var readableDate = date.toDateString();
+            var guest = { //creates guest object to add to our various lists
+                'name': name,
+                'checkedIn': readableDate,
+                'roomID': roomID
+                };
+
+            this.rooms[roomID] = guest;                     //adds guest reference to rooms object, at key roomID
+            this.guestRegistry[this.guestRegistry.length] = guest; //adds guest reference to registry array, at the end
+
+            if (this.roomHistory[roomID] === undefined){    //if key roomID doesnt exist in history object
+                this.roomHistory[roomID] = [];              //initialize a new key
+            }
+            this.roomHistory[roomID][this.roomHistory[roomID].length] = guest; //adds guest reference to the new history entry
+
+            console.log(name + " checked into room " + roomID + " at " + readableDate);
+        } else if (this.rooms[roomID]['name'] !== undefined){ //...but someone is already in that room
+	        console.warn("The room is already occupied by " + this.rooms[roomID]['name']);
+        } else {
+            console.error("somehow you reached this conditional block? grats on breaking my code");
+        }
+	};
+    /**
+     * attempts to remove a guest from the hotel
+     */
 	this.checkOut = function(roomID){
-		//remove a guest from the hotel
-	}
-	this.getVacancyCount = function(){
-		//returns the number of unoccupied rooms
-	}
+	    if (this.rooms[roomID]['name'] === undefined){
+	        console.warn("");
+        }
+        var date = new Date();
+        var readableDate = date.toDateString();
+        this.rooms[roomID]['checkedOut'] = readableDate; //adds checkout date
+        this.rooms[roomID] = {}; //remove guest from roomID
+        for (var i = 0; i < this.guestRegistry.length; i++){
+            if (this.guestRegistry[i]['roomID'] === roomID){
+                var name = this.guestRegistry[i]['name'];
+                this.guestRegistry.splice(i,1); //remove guest from registry
+                break;
+            }
+        }
+        console.log(name + " checked out of room " + roomID + " at " + readableDate);
+    };
+    /**
+     *
+     * @returns {number} how many rooms can be added
+     */
+    this.getVacancyCount = function(){
+        return this.totalRooms - this.guestRegistry.length;
+    };
+    this.getGuestRegistry = function(){
+        //return the entire list of rooms and their guests in this format:
+        //array of objects [
+        //  {
+        //      name    //name of the guest
+        //      roomID  //room they are checked in
+        //      checkedIn   //the date and time that they checked in
+        //  }
+        return this.guestRegistry;
+    };
+    this.getRoomHistory = function(roomID){
+        //return an array of all guests who have stayed at a particular room,
+        //including when they checked in, and when they checked out
+        return this.roomHistory[roomID];
+    };
 }
 
-
+var motel = new Hotel();
 	</script>
 </head>
 <body>
