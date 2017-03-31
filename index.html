@@ -1,29 +1,94 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title></title>
+	<title>Hotel Check-in Service</title>
+    <meta name="author" content="Donald J. Tran">
+    <meta name="description" content="Simple app to log and manage Guests as they check into and out of a hotel">
 	<script>
-//motel.rooms = { 123 : ["john"] }
-//
 
+/**
+ * Creates a Date/Time string in a readable format
+ * @param       dateObject
+ * @returns     {string}    Date/Time in following format "Thursday, March 2nd, 2017 at 12:09:54 PM"
+ */
+function createDateFrom(dateObject) {
+
+    /**
+     * Adds the correct ordinal suffix to the provided day
+     * @param   day             The return of a dateObject.getDate()
+     * @returns {string}        Returns day in the following format: "2nd"
+     */
+    function appendSuffixTo(day) {
+        if (day > 3 && day < 21)
+            return day+"th";
+        switch (day % 10) {
+            case 1:  return day+"st";
+            case 2:  return day+"nd";
+            case 3:  return day+"rd";
+            default: return day+"th";
+        }
+    }
+
+    /**
+     * Creates a Date string in a readable format
+     * @param   dateObject      From a new Date() object
+     * @returns {string}        Returns date in the following format: "Thursday, March 2nd, 2017"
+     */
+    function formatDate(dateObject) {
+        var daysArray = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        var monthsArray = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+        var day = daysArray[dateObject.getDay()];
+        var month = monthsArray[dateObject.getMonth()];
+        var date = appendSuffixTo(dateObject.getDate());
+        var year = dateObject.getFullYear();
+        var formattedDate = day+", "+month+" "+date+", "+year;
+        return formattedDate;
+    }
+
+    /**
+     * Creates a Time string in a readable format
+     * @param   dateObject      From a new Date() object
+     * @returns {string}        Returns time in the following format: "12:09:54 PM"
+     */
+    function formatTime(dateObject){
+        var hour = dateObject.getHours();
+        var minutes = dateObject.getMinutes();
+        var seconds = dateObject.getSeconds();
+        var meridiem = hour >= 12 ? 'pm' : 'am';    // determines post or ante meridiem
+        hour = hour % 12;                           // converts hour to non-military time
+        hour = hour === 0 ? 12 : hour;              // converts hour 0 to hour 12
+        minutes = ('0'+minutes).slice(-2);          // adds leading zero if needed
+        seconds = ('0'+seconds).slice(-2);          // adds leading zero if needed
+        var formattedTime = hour + ':' + minutes + ':' + seconds + " " + meridiem;
+        return formattedTime;
+    }
+
+    return formatDate(dateObject) + " at " + formatTime(dateObject);
+}
 function Hotel(){
+    /**
+     * Global Variables
+     */
+    this.totalRooms = 13; //the maximum amount of rooms allowed to be check out at one time
     this.rooms = {}; //the entire list of rooms and their guests, keys equal to roomID
-    this.totalRooms = 13;
     this.guestRegistry = []; //the entire list of rooms and their guests as objects
     this.roomHistory = {}; //all guests who have stayed at a particular room as an object of arrays
+
     /**
-     * attempts to check a guest into a room
+     * Attempts to check a guest into a room, and stores the guest in multiple lists
+     *      - this.rooms      - this.guestRegistry     - this.roomHistory
      * @param roomID    the number of the room the guest wishes to check into
-     * @param name      the name of the guest
+        * @param name      the name of the guest
      */
-	this.checkIn = function(roomID, name){
+	this.checkIn    = function(roomID, name){
         //add a guest to the hotel.
         //store the guest and the room that they checked into
         if (this.getVacancyCount() === 0){
             console.warn("Sorry, we're full!");
         } else if (this.rooms[roomID] === undefined || this.rooms[roomID]['name'] === undefined){ //if noone is in the room...
-            var date = new Date();
-            var readableDate = date.toDateString();
+            var dateObject = new Date();
+            var readableDate = createDateFrom(dateObject);
             var guest = { //creates guest object to add to our various lists
                 'name': name,
                 'checkedIn': readableDate,
@@ -38,58 +103,141 @@ function Hotel(){
             }
             this.roomHistory[roomID][this.roomHistory[roomID].length] = guest; //adds guest reference to the new history entry
 
-            console.log(name + " checked into room " + roomID + " at " + readableDate);
+            console.log(name + " checked into room " + roomID + " on " + readableDate);
         } else if (this.rooms[roomID]['name'] !== undefined){ //...but someone is already in that room
 	        console.warn("The room is already occupied by " + this.rooms[roomID]['name']);
         } else {
             console.error("somehow you reached this conditional block? grats on breaking my code");
         }
 	};
+
     /**
-     * attempts to remove a guest from the hotel
+     * Attempts to remove a guest from the hotel
      */
 	this.checkOut = function(roomID){
 	    if (this.rooms[roomID]['name'] === undefined){
-	        console.warn("");
-        }
-        var date = new Date();
-        var readableDate = date.toDateString();
-        this.rooms[roomID]['checkedOut'] = readableDate; //adds checkout date
-        this.rooms[roomID] = {}; //remove guest from roomID
-        for (var i = 0; i < this.guestRegistry.length; i++){
-            if (this.guestRegistry[i]['roomID'] === roomID){
-                var name = this.guestRegistry[i]['name'];
-                this.guestRegistry.splice(i,1); //remove guest from registry
-                break;
+	        console.warn("There is nobody in room " + roomID);
+        } else {
+            var dateObject = new Date();
+            var readableDate = createDateFrom(dateObject);
+            this.rooms[roomID]['checkedOut'] = readableDate; //adds checkout date
+            this.rooms[roomID] = {}; //remove guest from roomID
+            for (var i = 0; i < this.guestRegistry.length; i++) {
+                if (this.guestRegistry[i]['roomID'] === roomID) {
+                    var name = this.guestRegistry[i]['name'];
+                    this.guestRegistry.splice(i, 1); //remove guest from registry
+                    break;
+                }
             }
+            console.log(name + " checked out of room " + roomID + " on " + readableDate);
         }
-        console.log(name + " checked out of room " + roomID + " at " + readableDate);
     };
+
     /**
-     *
-     * @returns {number} how many rooms can be added
+     * Gets the number of rooms available for check-in
+     * @returns {number} the number of unoccupied rooms
      */
     this.getVacancyCount = function(){
         return this.totalRooms - this.guestRegistry.length;
     };
+
+    /**
+     * Gets the complete list of all guests staying at the hotel
+     * @returns {Array} the entire list of rooms, and their guests as objects in the format:
+     *      name        //name of the guest
+     *      roomID      //room they are checked in
+     *      checkedIn   //the date and time that they checked in
+     */
     this.getGuestRegistry = function(){
-        //return the entire list of rooms and their guests in this format:
-        //array of objects [
-        //  {
-        //      name    //name of the guest
-        //      roomID  //room they are checked in
-        //      checkedIn   //the date and time that they checked in
-        //  }
+        if (this.guestRegistry.length === 0)
+            console.warn("There are no guests staying with us right now");
         return this.guestRegistry;
     };
+
+    /**
+     * Gets the entire history of all guests who have stayed in a specified room
+     * @param roomID    the roomID to lookup
+     * @returns {Array} Array of all guests, as objects, who have stayed in the roomID. objects format:
+     *      name        name of the guest
+     *      roomID      room they are checked in
+     *      checkedIn   the date and time that they checked in
+     *      checkedOut  if property is present, the date and time that they checked out.
+     *                  if property is not present, the guest is still staying with us
+     */
     this.getRoomHistory = function(roomID){
         //return an array of all guests who have stayed at a particular room,
         //including when they checked in, and when they checked out
+        if (this.roomHistory[roomID] === undefined){
+            console.warn("We don't have any records for " + roomID);
+            return [];
+        }
         return this.roomHistory[roomID];
     };
+
+    /**
+     * Creates a Date/Time string in a readable format
+     * @param       dateObject
+     * @returns     {string}    Date/Time in following format "Thursday, March 2nd, 2017 at 12:09:54 PM"
+     */
+    function createDateFrom(dateObject) {
+
+        /**
+         * Adds the correct ordinal suffix to the provided day
+         * @param   day             The return of a dateObject.getDate()
+         * @returns {string}        Returns day in the following format: "2nd"
+         */
+        function appendSuffixTo(day) {
+            if (day > 3 && day < 21)
+                return day+"th";
+            switch (day % 10) {
+                case 1:  return day+"st";
+                case 2:  return day+"nd";
+                case 3:  return day+"rd";
+                default: return day+"th";
+            }
+        }
+
+        /**
+         * Creates a Date string in a readable format
+         * @param   dateObject      From a new Date() object
+         * @returns {string}        Returns date in the following format: "Thursday, March 2nd, 2017"
+         */
+        function formatDate(dateObject) {
+            var daysArray = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            var monthsArray = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            var day = daysArray[dateObject.getDay()];
+            var month = monthsArray[dateObject.getMonth()];
+            var date = appendSuffixTo(dateObject.getDate());
+            var year = dateObject.getFullYear();
+            var formattedDate = day+", "+month+" "+date+", "+year;
+            return formattedDate;
+        }
+
+        /**
+         * Creates a Time string in a readable format
+         * @param   dateObject      From a new Date() object
+         * @returns {string}        Returns time in the following format: "12:09:54 PM"
+         */
+        function formatTime(dateObject){
+            var hour = dateObject.getHours();
+            var minutes = dateObject.getMinutes();
+            var seconds = dateObject.getSeconds();
+            var meridiem = hour >= 12 ? 'pm' : 'am';    // determines post or ante meridiem
+            hour = hour % 12;                           // converts hour to non-military time
+            hour = hour === 0 ? 12 : hour;              // converts hour 0 to hour 12
+            minutes = ('0'+minutes).slice(-2);          // adds leading zero if needed
+            seconds = ('0'+seconds).slice(-2);          // adds leading zero if needed
+            var formattedTime = hour + ':' + minutes + ':' + seconds + " " + meridiem;
+            return formattedTime;
+        }
+
+        return formatDate(dateObject) + " at " + formatTime(dateObject);
+    }
 }
 
 var motel = new Hotel();
+
 	</script>
 </head>
 <body>
